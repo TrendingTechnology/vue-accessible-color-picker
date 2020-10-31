@@ -1,57 +1,43 @@
+// TO DO: For some reason, the following import resolves to `Vue === undefined`.
+// import Vue from 'vue'
+import * as Vue from 'vue'
+
 describe('index.js', () => {
-  test('default export has install function', async () => {
-    const { default: defaultExport } = await import('./index.js')
+  test('default export has “install” function', async () => {
+    const { default: ColorPickerPlugin } = await import('./index.js')
 
-    expect(typeof defaultExport.install).toBe('function')
+    expect(typeof ColorPickerPlugin.install).toBe('function')
   })
 
-  test('calling install calls Vue.component correctly', async () => {
-    const { default: defaultExport, ColorPicker } = await import('./index.js')
+  test('calling default export’s “install” method calls “app.component” correctly', async () => {
+    jest.spyOn(global.console, 'warn').mockImplementation()
+    const { default: ColorPickerPlugin, ColorPicker } = await import('./index.js')
+    const app = Vue.createApp({})
+    jest.spyOn(app, 'component')
 
-    const Vue = {
-      component () {
-        return jest.fn()
-      },
-    }
+    ColorPickerPlugin.install(app)
 
-    jest.spyOn(Vue, 'component')
+    expect(app.component).toHaveBeenNthCalledWith(1, 'ColorPicker', ColorPicker)
 
-    defaultExport.install(Vue)
+    ColorPickerPlugin.install(app)
 
-    expect(Vue.component).toHaveBeenNthCalledWith(1, 'ColorPicker', ColorPicker)
-
-    defaultExport.install(Vue)
-
-    expect(Vue.component).toHaveBeenNthCalledWith(1, 'ColorPicker', ColorPicker)
+    expect(global.console.warn).toHaveBeenCalledWith('[Vue warn]: Component "ColorPicker" has already been registered in target app.')
+    expect(app.component).toHaveBeenNthCalledWith(1, 'ColorPicker', ColorPicker)
   })
 
-  test('calls Vue.use if Vue is available on window (for browsers)', async () => {
-    jest.resetModuleRegistry()
-    const vueUseMock = jest.fn()
-    const windowSpy = jest.spyOn(global, 'window', 'get')
-    windowSpy.mockImplementation(() => {
-      return {
-        Vue: {
-          use: vueUseMock,
-        },
-      }
-    })
+  test('Using “app.use(plugin)” calls “app.component” correctly', async () => {
+    jest.spyOn(global.console, 'warn').mockImplementation()
+    const { default: ColorPickerPlugin, ColorPicker } = await import('./index.js')
+    const app = Vue.createApp({})
+    jest.spyOn(app, 'component')
 
-    const { default: defaultExport } = await import('./index.js')
+    app.use(ColorPickerPlugin)
 
-    expect(vueUseMock).toHaveBeenCalledWith(defaultExport)
-  })
+    expect(app.component).toHaveBeenNthCalledWith(1, 'ColorPicker', ColorPicker)
 
-  test('calls Vue.use if Vue is available on global', async () => {
-    jest.resetModuleRegistry()
-    const windowSpy = jest.spyOn(global, 'window', 'get')
-    windowSpy.mockImplementation(() => undefined)
-    global.Vue = {
-      use: jest.fn(),
-    }
+    app.use(ColorPickerPlugin)
 
-    const { default: defaultExport } = await import('./index.js')
-
-    expect(global.Vue.use).toHaveBeenCalledWith(defaultExport)
+    expect(global.console.warn).toHaveBeenCalledWith('[Vue warn]: Plugin has already been applied to target app.')
+    expect(app.component).toHaveBeenNthCalledWith(1, 'ColorPicker', ColorPicker)
   })
 })

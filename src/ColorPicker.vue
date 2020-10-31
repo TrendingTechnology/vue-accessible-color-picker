@@ -10,7 +10,7 @@
         Accessibility remark:
 
         I don’t know of a semantic HTML that would be adequate for the job of a planar range thumb.
-       -->
+      -->
       <div
         ref="thumb"
         class="vacp-color-space-thumb"
@@ -372,7 +372,7 @@ export default {
     this.setColorValueFromProp(this.color)
   },
 
-  beforeDestroy () {
+  beforeUnmount () {
     document.removeEventListener('mousemove', this.moveThumbWithMouse)
     document.removeEventListener('touchmove', this.moveThumbWithTouch)
 
